@@ -13,7 +13,7 @@ uv downloads Python 3.11 itself.
 ```bash
 make setup                                  # pinned dependencies into ~/.venvs/curbscope
 make test                                   # unit tests, no KITTI data needed
-make info DRIVE=2011_09_26_drive_0019       # needs a downloaded drive, see below
+make info DRIVE=2011_09_26_drive_0022       # needs a downloaded drive, see below
 ```
 
 KITTI needs a free login, so the data is not downloaded by a script:

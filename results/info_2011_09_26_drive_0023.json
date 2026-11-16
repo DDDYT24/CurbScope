@@ -1,0 +1,26 @@
+{
+  "drive": "2011_09_26_drive_0023",
+  "frames": 474,
+  "duration_s": 49.021968,
+  "distance_m": 414.2365685415803,
+  "start_lat_lon": [
+    49.032454465256,
+    8.4397210348662
+  ],
+  "tracklets": {
+    "by_class": {
+      "Car": 150,
+      "Van": 6,
+      "Cyclist": 1,
+      "Misc": 8,
+      "Pedestrian": 1,
+      "Truck": 1
+    },
+    "static_by_class": {
+      "Car": 147,
+      "Van": 3,
+      "Misc": 8,
+      "Truck": 1
+    }
+  }
+}
