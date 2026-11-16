@@ -7,7 +7,7 @@ RUN = $(UV) run --frozen
 # Ultralytics: no network (no usage analytics), no automatic pip installs.
 YOLO_ENV = YOLO_OFFLINE=1 YOLO_AUTOINSTALL=False
 
-.PHONY: help setup lint test info weights track
+.PHONY: help setup lint test info weights track geo
 
 help:
 	@echo "setup               install pinned dependencies with uv"
@@ -16,6 +16,7 @@ help:
 	@echo "info DRIVE=<id>     frames, duration and distance of one KITTI drive"
 	@echo "weights             download YOLO weights and check their SHA-256"
 	@echo "track [DRIVE=<id>]  YOLO + ByteTrack on all drives in the config, or one"
+	@echo "geo [DRIVE=<id>]    LiDAR position, lat/lon and error against KITTI labels"
 
 setup:
 	$(UV) sync --frozen
@@ -34,4 +35,7 @@ weights:
 	$(RUN) python scripts/get_weights.py
 
 track: weights
-	$(YOLO_ENV) $(RUN) python scripts/run_pipeline.py --kitti-dir $(KITTI_DIR) $(if $(DRIVE),--drive $(DRIVE))
+	$(YOLO_ENV) $(RUN) python scripts/run_pipeline.py --stage track --kitti-dir $(KITTI_DIR) $(if $(DRIVE),--drive $(DRIVE))
+
+geo:
+	$(RUN) python scripts/run_pipeline.py --stage geo --kitti-dir $(KITTI_DIR) $(if $(DRIVE),--drive $(DRIVE))

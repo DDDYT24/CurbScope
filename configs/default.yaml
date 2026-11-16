@@ -22,3 +22,18 @@ demo_gif:
   last_frame: 80
   step: 2              # every 2nd frame, played at 5 fps = real time
   width: 560
+
+# M2: 3D position of each box from LiDAR. Set before looking at any result, not tuned.
+geo:
+  box_keep_fraction: 0.6         # use the central 60% of the box width and height
+  lidar_height_m: 1.73           # Velodyne height above the road (KITTI sensor setup)
+  min_height_above_ground_m: 0.3 # drop points lower than this: road surface (flat road assumed)
+  cluster_gap_m: 0.5             # a jump in distance larger than this starts a new cluster
+  min_cluster_points: 5          # smaller clusters in front are noise (branches, poles)
+  min_box_points: 10             # fewer points in the box: position unknown
+
+geo_eval:
+  tracklet_types: [Car, Van, Truck]
+  detection_classes: [car, truck, bus]
+  match_max_m: 4.0               # about one car length; fixed before looking at results
+  range_bins_m: [0, 10, 20, 40]

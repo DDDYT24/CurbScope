@@ -45,3 +45,73 @@ def test_velo_to_world_agrees_through_cam2():
 def test_identity_pose_keeps_points():
     points = np.array([[1.0, 2.0, 3.0]])
     np.testing.assert_allclose(geo.apply_transform(np.eye(4), points), points)
+
+
+# --- M2: projection, box points, clustering, lat/lon -------------------------------------
+
+K = np.array([[700.0, 0, 600], [0, 700.0, 180], [0, 0, 1]])
+# Velodyne (x forward, y left, z up) -> camera (x right, y down, z forward), no offset.
+T_CAM_VELO = np.array([[0, -1, 0, 0], [0, 0, -1, 0], [1, 0, 0, 0], [0, 0, 0, 1]], dtype=float)
+GEO_CFG = {"box_keep_fraction": 0.6, "lidar_height_m": 1.73, "min_height_above_ground_m": 0.3,
+           "cluster_gap_m": 0.5, "min_cluster_points": 5, "min_box_points": 10}
+
+
+def test_project_principal_point_and_offset():
+    uv = geo.project(np.array([[0.0, 0.0, 10.0], [1.0, -0.5, 10.0]]), K)
+    np.testing.assert_allclose(uv, [[600, 180], [670, 145]])
+
+
+def test_frame_points_drops_ground_and_points_behind():
+    velo = np.array([
+        [10.0, 0.0, 0.0, 0],    # kept: 1.73 m above the road
+        [10.0, 0.0, -1.6, 0],   # dropped: 0.13 m above the road
+        [-10.0, 0.0, 0.0, 0],   # dropped: behind the camera
+    ])
+    cam, uv = geo.frame_points(velo, T_CAM_VELO, K, GEO_CFG)
+    np.testing.assert_allclose(cam, [[0.0, 0.0, 10.0]])
+    np.testing.assert_allclose(uv, [[600, 180]])
+
+
+def test_box_points_keeps_only_central_part():
+    uv = np.array([[105.0, 150.0], [150.0, 150.0], [195.0, 150.0]])
+    cam = np.arange(9, dtype=float).reshape(3, 3)
+    # box 100..200 wide, central 60% is 120..180: only the middle point survives
+    kept = geo.box_points(cam, uv, (100, 100, 200, 200), keep_fraction=0.6)
+    np.testing.assert_allclose(kept, cam[[1]])
+
+
+def test_nearest_cluster_skips_small_noise_in_front():
+    rng = np.random.default_rng(0)
+    noise = np.array([[0, 0, 5.0], [0, 0, 5.1]])                       # 2 points: a branch
+    car = np.column_stack([rng.normal(0, 0.3, 8), rng.normal(0, 0.3, 8), 10 + rng.random(8) * 0.3])
+    wall = np.column_stack([np.zeros(20), np.zeros(20), np.linspace(20, 20.4, 20)])
+    cluster = geo.nearest_cluster(np.vstack([wall, noise, car]), gap_m=0.5, min_points=5)
+    assert len(cluster) == 8 and cluster[:, 2].max() < 11
+    assert geo.nearest_cluster(noise, gap_m=0.5, min_points=5) is None
+    assert geo.nearest_cluster(np.zeros((0, 3)), gap_m=0.5, min_points=5) is None
+
+
+def test_locate_unknown_with_too_few_points_else_median():
+    few = np.tile([0.0, 0.0, 10.0], (9, 1))
+    assert geo.locate(few, GEO_CFG) == (None, 9)
+    pts = np.column_stack([np.zeros(11), np.zeros(11), np.linspace(10, 10.4, 11)])
+    pos, n = geo.locate(pts, GEO_CFG)
+    assert n == 11
+    np.testing.assert_allclose(pos, [0, 0, 10.2])
+
+
+def test_latlon_round_trip():
+    xy = np.array([[0.0, 0.0], [500.0, -300.0], [-1200.0, 800.0]])
+    latlon = geo.world_to_latlon(xy, 49.03, 8.44)
+    np.testing.assert_allclose(latlon[0], [49.03, 8.44], atol=1e-12)
+    np.testing.assert_allclose(geo.latlon_to_world(latlon, 49.03, 8.44), xy, atol=1e-6)
+
+
+def test_latlon_matches_pykitti_poses(fake_kitti):
+    """Converting each OXTS fix to world must land on pykitti's own pose translation."""
+    from curbscope import io_kitti
+
+    raw = io_kitti.open_drive(fake_kitti, "2011_09_26_drive_0001")
+    fixes = np.array([[o.packet.lat, o.packet.lon] for o in raw.oxts])
+    xy = geo.latlon_to_world(fixes, fixes[0, 0], fixes[0, 1])
+    np.testing.assert_allclose(xy, io_kitti.poses(raw)[:, :2, 3], atol=1e-6)

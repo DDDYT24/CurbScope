@@ -1,0 +1,100 @@
+{
+  "drive": "2011_09_26_drive_0036",
+  "split": "dev",
+  "vehicle_boxes": 3912,
+  "vehicle_boxes_unknown": 933,
+  "vehicle_boxes_known": 2979,
+  "label_instances_in_view": 3472,
+  "matched_pairs": 1816,
+  "known_boxes_without_label": 1163,
+  "labels_without_box": 1656,
+  "error_by_range": {
+    "0-10 m": {
+      "pairs": 224,
+      "center": {
+        "median": 1.115,
+        "p90": 1.691
+      },
+      "footprint": {
+        "median": 0.0,
+        "p90": 0.0
+      }
+    },
+    "10-20 m": {
+      "pairs": 550,
+      "center": {
+        "median": 1.483,
+        "p90": 2.79
+      },
+      "footprint": {
+        "median": 0.0,
+        "p90": 1.352
+      }
+    },
+    "20-40 m": {
+      "pairs": 725,
+      "center": {
+        "median": 1.592,
+        "p90": 2.14
+      },
+      "footprint": {
+        "median": 0.0,
+        "p90": 0.0
+      }
+    },
+    "40+ m": {
+      "pairs": 317,
+      "center": {
+        "median": 1.611,
+        "p90": 2.054
+      },
+      "footprint": {
+        "median": 0.0,
+        "p90": 0.0
+      }
+    },
+    "all": {
+      "pairs": 1816,
+      "center": {
+        "median": 1.492,
+        "p90": 2.136
+      },
+      "footprint": {
+        "median": 0.0,
+        "p90": 0.0
+      }
+    }
+  },
+  "all_classes_unknown": 934,
+  "all_classes_boxes": 3917,
+  "latlon_roundtrip_max_m": 0.0,
+  "settings": {
+    "geo": {
+      "box_keep_fraction": 0.6,
+      "lidar_height_m": 1.73,
+      "min_height_above_ground_m": 0.3,
+      "cluster_gap_m": 0.5,
+      "min_cluster_points": 5,
+      "min_box_points": 10
+    },
+    "geo_eval": {
+      "tracklet_types": [
+        "Car",
+        "Van",
+        "Truck"
+      ],
+      "detection_classes": [
+        "car",
+        "truck",
+        "bus"
+      ],
+      "match_max_m": 4.0,
+      "range_bins_m": [
+        0,
+        10,
+        20,
+        40
+      ]
+    }
+  }
+}

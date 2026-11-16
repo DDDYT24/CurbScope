@@ -1,5 +1,15 @@
 # Changelog
 
+## M2 Georeference
+
+- `curbscope/geo.py`: project Velodyne points into cam2, keep the central part of each box above
+  the ground, take the nearest cluster's median as the position, convert to world and to
+  latitude, longitude by inverting pykitti's Mercator exactly (pyproj).
+- `curbscope/geo_eval.py`: per-frame Hungarian matching against KITTI Car/Van/Truck tracklets
+  (4 m gate), errors to the label centre and to its footprint, by range.
+- `make geo` writes `results/geo_<drive>.csv`, `results/geo_error_<drive>.json`,
+  `results/geo_error.png` and a calibration check image per drive.
+
 ## M1 Detect and track
 
 - `curbscope/detect_track.py`: YOLO11n (COCO weights) on every cam2 frame, ByteTrack IDs through
