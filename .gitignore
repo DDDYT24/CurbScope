@@ -1,0 +1,19 @@
+# Raw data, photos and model weights never enter the repo
+data/
+*.pt
+*.onnx
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Local tracking files
+TODO.md
+V*_PLAN.md
+CODEMAP.md

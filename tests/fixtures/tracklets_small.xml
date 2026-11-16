@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!DOCTYPE boost_serialization>
+<boost_serialization signature="serialization::archive" version="9">
+<tracklets class_id="0" tracking_level="0" version="0">
+	<count>2</count>
+	<item_version>1</item_version>
+	<item class_id="1" tracking_level="0" version="1">
+		<objectType>Car</objectType>
+		<h>1.5</h>
+		<w>1.6</w>
+		<l>4.2</l>
+		<first_frame>3</first_frame>
+		<poses class_id="2" tracking_level="0" version="0">
+			<count>2</count>
+			<item_version>2</item_version>
+			<item class_id="3" tracking_level="0" version="2">
+				<tx>10.0</tx><ty>-3.0</ty><tz>-1.7</tz>
+				<rx>0.0</rx><ry>0.0</ry><rz>0.1</rz>
+				<state>1</state><occlusion>0</occlusion><occlusion_kf>1</occlusion_kf>
+				<truncation>0</truncation><amt_occlusion>0.0</amt_occlusion>
+				<amt_occlusion_kf>-1</amt_occlusion_kf><amt_border_l>0.0</amt_border_l>
+				<amt_border_r>0.0</amt_border_r><amt_border_kf>-1</amt_border_kf>
+			</item>
+			<item>
+				<tx>9.0</tx><ty>-3.0</ty><tz>-1.7</tz>
+				<rx>0.0</rx><ry>0.0</ry><rz>0.1</rz>
+				<state>1</state><occlusion>0</occlusion><occlusion_kf>1</occlusion_kf>
+				<truncation>0</truncation><amt_occlusion>0.0</amt_occlusion>
+				<amt_occlusion_kf>-1</amt_occlusion_kf><amt_border_l>0.0</amt_border_l>
+				<amt_border_r>0.0</amt_border_r><amt_border_kf>-1</amt_border_kf>
+			</item>
+		</poses>
+		<finished>1</finished>
+	</item>
+	<item>
+		<objectType>Pedestrian</objectType>
+		<h>1.8</h>
+		<w>0.6</w>
+		<l>0.8</l>
+		<first_frame>0</first_frame>
+		<poses>
+			<count>1</count>
+			<item_version>2</item_version>
+			<item>
+				<tx>5.0</tx><ty>2.0</ty><tz>-1.0</tz>
+				<rx>0.0</rx><ry>0.0</ry><rz>0.0</rz>
+				<state>1</state><occlusion>0</occlusion><occlusion_kf>1</occlusion_kf>
+				<truncation>0</truncation><amt_occlusion>0.0</amt_occlusion>
+				<amt_occlusion_kf>-1</amt_occlusion_kf><amt_border_l>0.0</amt_border_l>
+				<amt_border_r>0.0</amt_border_r><amt_border_kf>-1</amt_border_kf>
+			</item>
+		</poses>
+		<finished>1</finished>
+	</item>
+</tracklets>
+</boost_serialization>
