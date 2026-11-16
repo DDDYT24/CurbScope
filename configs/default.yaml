@@ -1,0 +1,24 @@
+# CurbScope settings. Change values here, not in code.
+
+kitti_dir: ~/data/kitti          # overridden by KITTI_DIR in the Makefile
+
+# Split by drive (owner decision, 2026-11-15). Thresholds are tuned on dev only.
+drives:
+  dev: [2011_09_26_drive_0022, 2011_09_26_drive_0036]
+  test: [2011_09_26_drive_0023]
+
+detect:
+  weights: data/weights/yolo11n.pt   # COCO-pretrained, AGPL-3.0, downloaded by `make weights`
+  weights_url: https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo11n.pt
+  weights_sha256: 0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1
+  imgsz: 1280          # KITTI images are 1242 x 375; 640 would shrink distant cars too much
+  conf: 0.1            # Ultralytics' own default for track mode; ByteTrack needs low-score boxes
+  classes: [car, motorcycle, bus, truck, fire hydrant, stop sign]   # COCO class names
+  tracker: configs/bytetrack.yaml
+
+demo_gif:
+  drive: 2011_09_26_drive_0022
+  first_frame: 0
+  last_frame: 80
+  step: 2              # every 2nd frame, played at 5 fps = real time
+  width: 560

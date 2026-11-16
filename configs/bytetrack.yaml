@@ -1,0 +1,10 @@
+# ByteTrack settings: a copy of the defaults shipped with ultralytics 8.4.196
+# (ultralytics/cfg/trackers/bytetrack.yaml, AGPL-3.0), kept here so a version bump cannot change them.
+# Not tuned on any drive.
+tracker_type: bytetrack
+track_high_thresh: 0.25   # first-stage match threshold
+track_low_thresh: 0.1     # second-stage threshold for low-score boxes
+new_track_thresh: 0.25    # start a new track only above this score
+track_buffer: 30          # frames a lost track is kept alive (3 s at 10 Hz)
+match_thresh: 0.8         # association cost threshold
+fuse_score: True          # fuse detection score into the matching cost

@@ -1,0 +1,84 @@
+{
+  "drives": {
+    "2011_09_26_drive_0022": {
+      "frames": 800,
+      "cpu_seconds_per_frame": 0.769,
+      "detections_raw": 5630,
+      "detections_tracked": 2800,
+      "detections_without_track": 2830,
+      "tracks": 120,
+      "tracks_by_class": {
+        "bus": 1,
+        "car": 103,
+        "stop sign": 2,
+        "truck": 14
+      },
+      "detections_by_class": {
+        "bus": 19,
+        "car": 2533,
+        "motorcycle": 1,
+        "stop sign": 8,
+        "truck": 239
+      },
+      "gif_bytes": 3513825
+    },
+    "2011_09_26_drive_0023": {
+      "frames": 474,
+      "cpu_seconds_per_frame": 0.737,
+      "detections_raw": 13612,
+      "detections_tracked": 5380,
+      "detections_without_track": 8232,
+      "tracks": 276,
+      "tracks_by_class": {
+        "bus": 2,
+        "car": 263,
+        "motorcycle": 5,
+        "truck": 6
+      },
+      "detections_by_class": {
+        "bus": 15,
+        "car": 5136,
+        "motorcycle": 53,
+        "truck": 176
+      }
+    },
+    "2011_09_26_drive_0036": {
+      "frames": 803,
+      "cpu_seconds_per_frame": 0.742,
+      "detections_raw": 9059,
+      "detections_tracked": 3917,
+      "detections_without_track": 5142,
+      "tracks": 188,
+      "tracks_by_class": {
+        "bus": 2,
+        "car": 174,
+        "fire hydrant": 2,
+        "stop sign": 1,
+        "truck": 9
+      },
+      "detections_by_class": {
+        "bus": 20,
+        "car": 3358,
+        "fire hydrant": 4,
+        "stop sign": 1,
+        "truck": 534
+      }
+    }
+  },
+  "settings": {
+    "ultralytics": "8.4.196",
+    "weights": "yolo11n.pt",
+    "weights_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+    "imgsz": 1280,
+    "conf": 0.1,
+    "classes": [
+      "car",
+      "motorcycle",
+      "bus",
+      "truck",
+      "fire hydrant",
+      "stop sign"
+    ],
+    "tracker": "configs/bytetrack.yaml"
+  }
+}

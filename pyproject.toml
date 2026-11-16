@@ -13,6 +13,10 @@ dependencies = [
     "matplotlib==3.9.2",
     "pillow==10.4.0",
     "PyYAML==6.0.2",
+    "ultralytics==8.4.196",
+    "lap==0.5.13",
+    "torch==2.14.1",
+    "torchvision==0.29.1",
 ]
 
 [dependency-groups]
@@ -20,6 +24,16 @@ dev = [
     "pytest==8.3.3",
     "ruff==0.7.4",
 ]
+
+# CPU-only torch: the default PyPI wheel on Linux pulls several GB of CUDA libraries.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
 
 [build-system]
 requires = ["hatchling==1.25.0"]
