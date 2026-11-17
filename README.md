@@ -25,6 +25,7 @@ make motion                                 # per-track features for the parked/
 make label                                  # labelling page in the browser
 make tune                                   # rule accuracy over thresholds, dev drives only
 make evaluate SPLIT=test                    # needs the committed configs/frozen_thresholds.yaml
+make segments                               # curb segments and GeoJSON for QGIS
 ```
 
 `make track` first downloads the YOLO weights (about 5 MB) and checks their SHA-256 against
@@ -45,6 +46,7 @@ use `make info KITTI_DIR=/other/path DRIVE=...` to point elsewhere.
 - [M1: detecting and tracking vehicles](docs/how_it_works_m1.md)
 - [M2: putting every box on the map](docs/how_it_works_m2.md)
 - [M3: parked or moving](docs/how_it_works_m3.md)
+- [M4: curb segments](docs/how_it_works_m4.md)
 
 ## Data and licences
 
@@ -59,6 +61,7 @@ use `make info KITTI_DIR=/other/path DRIVE=...` to point elsewhere.
 | [pyproj](https://github.com/pyproj4/pyproj) | world coordinates to latitude, longitude | MIT |
 | [SciPy](https://scipy.org) | Hungarian matching against labels | BSD-3-Clause |
 | [Streamlit](https://streamlit.io) | labelling page and dashboard | Apache-2.0 |
+| [Shapely](https://github.com/shapely/shapely) | path geometry for curb segments | BSD-3-Clause |
 
 Because Ultralytics is AGPL-3.0, this repository is open source under the same licence.
 No KITTI files, photos or model weights are stored in this repository. Images in `results/` that
@@ -75,3 +78,7 @@ show KITTI frames (the demo GIF and `geo_check_*.png`) are shared under KITTI's 
   up to half a car length from the car's centre. Boxes with fewer than 10 LiDAR points (mostly
   distant or occluded cars) get no position and are counted as unknown. Ground points are
   removed with a flat-road assumption, and KITTI's scans are not motion-compensated.
+- No-parking zones are subtracted only around detected fire hydrants and stop signs. COCO has
+  no class for driveways, intersections or crosswalks, so those Edmonton rules are not applied.
+  A vehicle's length along the curb falls back to 4.5 m when LiDAR cannot measure it; the
+  summary counts how often.

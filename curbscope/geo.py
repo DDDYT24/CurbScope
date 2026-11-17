@@ -99,18 +99,19 @@ def nearest_cluster(points: np.ndarray, gap_m: float, min_points: int) -> np.nda
     return None
 
 
+def object_points(points_cam: np.ndarray, cfg: dict) -> np.ndarray | None:
+    """The LiDAR points (cam2 frame) of the object seen in a box, or None when the box has
+    fewer than min_box_points or no cluster is big enough."""
+    if len(points_cam) < cfg["min_box_points"]:
+        return None
+    return nearest_cluster(points_cam, cfg["cluster_gap_m"], cfg["min_cluster_points"])
+
+
 def locate(points_cam: np.ndarray, cfg: dict) -> tuple[np.ndarray | None, int]:
     """3D position (cam2 frame) of the object seen in a box, and the number of box points.
-
-    Unknown (None) when the box has fewer than min_box_points or no cluster is big enough.
-    """
-    n = len(points_cam)
-    if n < cfg["min_box_points"]:
-        return None, n
-    cluster = nearest_cluster(points_cam, cfg["cluster_gap_m"], cfg["min_cluster_points"])
-    if cluster is None:
-        return None, n
-    return np.median(cluster, axis=0), n
+    The position is the median of the object's points; None means unknown."""
+    cluster = object_points(points_cam, cfg)
+    return (None if cluster is None else np.median(cluster, axis=0)), len(points_cam)
 
 
 def _mercator(origin_lat: float) -> Proj:
@@ -124,7 +125,8 @@ def world_to_latlon(xy: np.ndarray, origin_lat: float, origin_lon: float) -> np.
     proj = _mercator(origin_lat)
     x0, y0 = proj(origin_lon, origin_lat)
     xy = np.asarray(xy, dtype=float).reshape(-1, 2)
-    lon, lat = proj(xy[:, 0] + x0, xy[:, 1] + y0, inverse=True)
+    # Lists, not arrays: pyproj treats a one-element array as a scalar and numpy warns.
+    lon, lat = proj((xy[:, 0] + x0).tolist(), (xy[:, 1] + y0).tolist(), inverse=True)
     return np.column_stack([lat, lon])
 
 
@@ -133,5 +135,5 @@ def latlon_to_world(latlon: np.ndarray, origin_lat: float, origin_lon: float) ->
     proj = _mercator(origin_lat)
     x0, y0 = proj(origin_lon, origin_lat)
     latlon = np.asarray(latlon, dtype=float).reshape(-1, 2)
-    x, y = proj(latlon[:, 1], latlon[:, 0])
-    return np.column_stack([x - x0, y - y0])
+    x, y = proj(latlon[:, 1].tolist(), latlon[:, 0].tolist())
+    return np.column_stack([np.asarray(x) - x0, np.asarray(y) - y0])
