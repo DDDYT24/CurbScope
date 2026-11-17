@@ -1,6 +1,7 @@
 """Run the pipeline stages on KITTI drives.
 
-Stages: track (M1, YOLO + ByteTrack), geo (M2, LiDAR position, lat/lon, error vs labels).
+Stages: track (M1, YOLO + ByteTrack), geo (M2, LiDAR position, lat/lon, error vs labels),
+motion (M3, per-track features for the parked/moving rules).
 Usage: python scripts/run_pipeline.py --stage track --kitti-dir ~/data/kitti [--drive <id>]
 Without --drive, every dev and test drive in the config is processed.
 """
@@ -13,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from curbscope import detect_track, geo, geo_eval, io_kitti
+from curbscope import detect_track, geo, geo_eval, io_kitti, motion
 from curbscope.config import DEFAULT, all_drives, load_config
 
 
@@ -198,9 +199,23 @@ def stage_geo(cfg: dict, kitti_dir: str, drives: list[str], out_dir: Path) -> No
                               cfg["geo_eval"]["range_bins_m"])
 
 
+def stage_motion(cfg: dict, kitti_dir: str, drives: list[str], out_dir: Path) -> None:
+    for drive in drives:
+        paths = [out_dir / f"tracks_{drive}.csv", out_dir / f"geo_{drive}.csv"]
+        missing = [str(p) for p in paths if not p.exists()]
+        if missing:
+            raise FileNotFoundError(f"{missing} not found; run `make track geo` first")
+        features = motion.track_features(pd.read_csv(paths[0]), pd.read_csv(paths[1]),
+                                         cfg["motion"])
+        features.to_csv(out_dir / f"motion_features_{drive}.csv", index=False,
+                        float_format="%.4f")
+        decided_b = int(features["spread_m"].notna().sum())
+        print(f"{drive}: {len(features)} tracks, rule B can decide {decided_b}", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["track", "geo"], required=True)
+    parser.add_argument("--stage", choices=["track", "geo", "motion"], required=True)
     parser.add_argument("--config", default=str(DEFAULT))
     parser.add_argument("--kitti-dir")
     parser.add_argument("--drive", help="one drive id; default: all drives in the config")
@@ -212,7 +227,8 @@ def main() -> None:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     drives = [args.drive] if args.drive else all_drives(cfg)
-    {"track": stage_track, "geo": stage_geo}[args.stage](cfg, kitti_dir, drives, out_dir)
+    stages = {"track": stage_track, "geo": stage_geo, "motion": stage_motion}
+    stages[args.stage](cfg, kitti_dir, drives, out_dir)
 
 
 if __name__ == "__main__":

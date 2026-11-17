@@ -1,5 +1,18 @@
 # Changelog
 
+## M3 Parked or moving
+
+- `curbscope/motion.py`: per-track features for an image rule (box shift over box height) and a
+  world rule (spread around the median position, implied speed); scoring of both rules on the
+  same labelled tracks with accuracy, precision, recall and confusion matrix.
+- `apps/label_tracks.py` (`make label`): labelling page with box crops over time, a full frame
+  and the world trajectory; writes `labels/track_labels_<drive>.csv`; never shows rule results.
+- `scripts/tune.py` (`make tune`): accuracy over a threshold grid on dev drives; refuses the
+  test drive.
+- `scripts/evaluate.py` (`make evaluate SPLIT=dev|test`): uses `configs/frozen_thresholds.yaml`;
+  the test drive is refused unless that file is committed and unchanged; its SHA-256 goes into
+  `results/motion_eval.json`.
+
 ## M2 Georeference
 
 - `curbscope/geo.py`: project Velodyne points into cam2, keep the central part of each box above

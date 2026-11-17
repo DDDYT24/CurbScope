@@ -21,6 +21,10 @@ make test                                   # unit tests, no KITTI data needed
 make info DRIVE=2011_09_26_drive_0022       # needs a downloaded drive, see below
 make track                                  # YOLO + ByteTrack on every drive in configs/default.yaml
 make geo                                    # LiDAR position, lat/lon, error against KITTI labels
+make motion                                 # per-track features for the parked/moving rules
+make label                                  # labelling page in the browser
+make tune                                   # rule accuracy over thresholds, dev drives only
+make evaluate SPLIT=test                    # needs the committed configs/frozen_thresholds.yaml
 ```
 
 `make track` first downloads the YOLO weights (about 5 MB) and checks their SHA-256 against
@@ -40,6 +44,7 @@ use `make info KITTI_DIR=/other/path DRIVE=...` to point elsewhere.
 - [M0: loading a KITTI drive](docs/how_it_works_m0.md)
 - [M1: detecting and tracking vehicles](docs/how_it_works_m1.md)
 - [M2: putting every box on the map](docs/how_it_works_m2.md)
+- [M3: parked or moving](docs/how_it_works_m3.md)
 
 ## Data and licences
 
@@ -53,6 +58,7 @@ use `make info KITTI_DIR=/other/path DRIVE=...` to point elsewhere.
 | [OpenCV](https://opencv.org) | drawing boxes, resizing | Apache-2.0 |
 | [pyproj](https://github.com/pyproj4/pyproj) | world coordinates to latitude, longitude | MIT |
 | [SciPy](https://scipy.org) | Hungarian matching against labels | BSD-3-Clause |
+| [Streamlit](https://streamlit.io) | labelling page and dashboard | Apache-2.0 |
 
 Because Ultralytics is AGPL-3.0, this repository is open source under the same licence.
 No KITTI files, photos or model weights are stored in this repository. Images in `results/` that
