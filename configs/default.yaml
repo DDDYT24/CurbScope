@@ -58,3 +58,14 @@ segments:
   vehicle_length_range_m: [2.0, 8.0]  # LiDAR lengths outside this are treated as failures
   min_length_points: 20               # LiDAR points needed, over all frames, to measure length
   display_offset_m: 4.0               # GeoJSON segment lines are drawn this far beside our path
+
+# M5: parking sign OCR. Photos and transcriptions come from the owner.
+ocr:
+  raw_dir: data/signs                   # the owner's photos (never committed)
+  signs_dir: data/signs_clean           # same photos after scripts/strip_exif.py
+  groundtruth: labels/signs_groundtruth.csv
+  crop_pad_px: 4                        # margin around each detected text line
+  tesseract_config: "--psm 7"           # treat each crop as one text line
+  trocr_model: microsoft/trocr-base-printed
+  trocr_revision: 93450be3f1ed40a930690d951ef3932687cc1892   # pinned model commit
+  person_conf: 0.4                      # YOLO confidence to warn about a person in a photo

@@ -6,8 +6,10 @@ KITTI_DIR ?= $(HOME)/data/kitti
 RUN = $(UV) run --frozen
 # Ultralytics: no network (no usage analytics), no automatic pip installs.
 YOLO_ENV = YOLO_OFFLINE=1 YOLO_AUTOINSTALL=False
+# Hugging Face: no usage telemetry when TrOCR is downloaded.
+HF_ENV = HF_HUB_DISABLE_TELEMETRY=1
 
-.PHONY: help setup lint test info weights track geo motion label tune evaluate segments
+.PHONY: help setup lint test info weights track geo motion label tune evaluate segments strip-exif ocr
 
 help:
 	@echo "setup               install pinned dependencies with uv"
@@ -22,6 +24,8 @@ help:
 	@echo "tune                rule accuracy over thresholds, dev drives only"
 	@echo "evaluate SPLIT=dev|test  score both rules with configs/frozen_thresholds.yaml"
 	@echo "segments [DRIVE=<id>]  curb segments and GeoJSON (needs frozen thresholds)"
+	@echo "strip-exif          copy data/signs/ to data/signs_clean/ without EXIF"
+	@echo "ocr                 compare three OCR engines on the sign photos"
 
 setup:
 	$(UV) sync --frozen
@@ -60,3 +64,9 @@ evaluate:
 
 segments:
 	$(RUN) python scripts/run_pipeline.py --stage segments --kitti-dir $(KITTI_DIR) $(if $(DRIVE),--drive $(DRIVE))
+
+strip-exif: weights
+	$(YOLO_ENV) $(RUN) python scripts/strip_exif.py
+
+ocr:
+	$(HF_ENV) $(RUN) python scripts/ocr_benchmark.py
