@@ -1,5 +1,20 @@
 # Changelog
 
+## M5 Parking sign OCR benchmark and rule parser
+
+- `scripts/strip_exif.py` (`make strip-exif`): upright copies of the sign photos with no EXIF,
+  checked after saving; YOLO lists photos that may show a person.
+- `curbscope/ocr/detect_lines.py`: EasyOCR detection once per photo, boxes grouped into lines,
+  one crop per line so marks the detector skips (dashes) stay in the crop.
+- `curbscope/ocr/recognizers.py`: Tesseract (psm 7), EasyOCR and TrOCR base-printed (pinned
+  model commit) on the same crops.
+- `curbscope/ocr/parse_rules.py`: OCR confusion fixes inside numbers only; time limits, time
+  ranges, days, exceptions, sign types and permit zones; 45 tests.
+- `scripts/ocr_benchmark.py` (`make ocr`): CER, CPU time and exact rule accuracy per recogniser,
+  by photo condition, plus the parser on the transcriptions.
+- Dependencies: indirect packages released less than two weeks before the lock are capped; one
+  OpenCV build is kept for both Ultralytics and EasyOCR.
+
 ## M4 Curb segments and GeoJSON
 
 - `curbscope/segments.py`: places objects on our path (distance along it, side from the cross

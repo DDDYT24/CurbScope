@@ -21,6 +21,10 @@ dependencies = [
     "scipy==1.15.3",
     "streamlit==1.66.1",
     "shapely==2.2.0",
+    "easyocr==1.7.2",
+    "pytesseract==0.3.13",
+    "transformers==5.22.1",
+    "jiwer==4.0.0",
 ]
 
 [dependency-groups]
@@ -34,6 +38,33 @@ dev = [
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+[tool.uv]
+# Indirect dependencies are capped below releases newer than two weeks at lock time
+# (2026-11-17), for stability; the PyTorch CPU index has no upload dates, so uv's
+# exclude-newer cannot be used.
+constraint-dependencies = [
+    "annotated-doc<0.0.6",
+    "click<8.5.1",
+    "filelock<4.2.8",
+    "httpcore2<2.16.1",
+    "httpx2<2.16.1",
+    "imageio<2.38.2",
+    "markdown-it-py<4.3.0",
+    "narwhals<2.29.0",
+    "pyarrow<26.0.1",
+    "pydantic<2.14.3",
+    "pydantic-core<2.50.4",
+    "python-multipart<0.0.34",
+    "regex<2026.11.7",
+    "typer<0.28.0",
+    "typing-inspection<0.4.5",
+    "ultralytics-platform<0.1.103",
+    "ultralytics-thop<2.2.5",
+]
+# EasyOCR asks for opencv-python-headless, which installs the same cv2 module as the
+# opencv-python that Ultralytics needs; two copies overwrite each other. Keep only one.
+override-dependencies = ["opencv-python-headless; sys_platform == 'never'"]
 
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }

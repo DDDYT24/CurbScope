@@ -26,7 +26,12 @@ make label                                  # labelling page in the browser
 make tune                                   # rule accuracy over thresholds, dev drives only
 make evaluate SPLIT=test                    # needs the committed configs/frozen_thresholds.yaml
 make segments                               # curb segments and GeoJSON for QGIS
+make strip-exif                             # sign photos copied without EXIF metadata
+make ocr                                    # Tesseract vs EasyOCR vs TrOCR on the signs
 ```
+
+`make ocr` needs the Tesseract program (`sudo apt install tesseract-ocr`) and downloads the
+EasyOCR (about 100 MB) and TrOCR (about 1.3 GB) models on first use.
 
 `make track` first downloads the YOLO weights (about 5 MB) and checks their SHA-256 against
 the config. Tracking itself runs offline. Outputs: `results/tracks_<drive>.csv` (one row per
@@ -47,6 +52,7 @@ use `make info KITTI_DIR=/other/path DRIVE=...` to point elsewhere.
 - [M2: putting every box on the map](docs/how_it_works_m2.md)
 - [M3: parked or moving](docs/how_it_works_m3.md)
 - [M4: curb segments](docs/how_it_works_m4.md)
+- [M5: reading parking signs](docs/how_it_works_m5.md)
 
 ## Data and licences
 
@@ -62,6 +68,10 @@ use `make info KITTI_DIR=/other/path DRIVE=...` to point elsewhere.
 | [SciPy](https://scipy.org) | Hungarian matching against labels | BSD-3-Clause |
 | [Streamlit](https://streamlit.io) | labelling page and dashboard | Apache-2.0 |
 | [Shapely](https://github.com/shapely/shapely) | path geometry for curb segments | BSD-3-Clause |
+| [EasyOCR](https://github.com/JaidedAI/EasyOCR) 1.7.2 | text detection and one recogniser | Apache-2.0 |
+| [Tesseract](https://github.com/tesseract-ocr/tesseract) via pytesseract | recogniser | Apache-2.0 |
+| [TrOCR](https://huggingface.co/microsoft/trocr-base-printed) base-printed via Transformers | recogniser | MIT (microsoft/unilm repository; the model card states none) |
+| [jiwer](https://github.com/jitsi/jiwer) | character error rate | Apache-2.0 |
 
 Because Ultralytics is AGPL-3.0, this repository is open source under the same licence.
 No KITTI files, photos or model weights are stored in this repository. Images in `results/` that
@@ -82,3 +92,5 @@ show KITTI frames (the demo GIF and `geo_check_*.png`) are shared under KITTI's 
   no class for driveways, intersections or crosswalks, so those Edmonton rules are not applied.
   A vehicle's length along the curb falls back to 4.5 m when LiDAR cannot measure it; the
   summary counts how often.
+- Sign reading keeps only the first time range on a sign and produces one rule per photo; the
+  sign photos are Edmonton's, while the curb measurements are from Karlsruhe.
