@@ -26,7 +26,7 @@ as we drive past, and the median of those surface points moves by up to about a 
 its box over time, one full frame, and its world trajectory next to our own path. Buttons record
 *parked*, *moving* or *unsure*, with an optional note (for example an ID switch), into
 `labels/track_labels_<drive>.csv`. The page never shows what the rules decided. The labelling
-rules are written in `docs/labeling_guide.md`.
+rules go in `docs/labeling_guide.md`, written by the owner before labelling.
 
 ## Thresholds are chosen on dev drives and frozen
 

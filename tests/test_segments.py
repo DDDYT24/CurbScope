@@ -131,3 +131,20 @@ def test_geojson_survives_a_tight_bend():
     data = sg.geojson(line, segs, empty_cars.assign(x=[], y=[]), (49.0, 8.4), 4.0)
     assert all(f["geometry"]["type"] == "LineString" for f in data["features"])
     json.dumps(data)
+
+
+def test_points_past_the_path_ends_are_not_beside_it():
+    line = sg.path_line(np.array([[0.0, 0.0], [100.0, 0.0]]))
+    ahead = sg.place(line, (108.0, -3.0))     # still ahead when the drive stopped
+    behind = sg.place(line, (-5.0, 3.0))
+    beside = sg.place(line, (50.0, 3.0))
+    assert ahead[0] == 100.0 and behind[0] == 0.0
+    assert sg.beside_path([ahead[0], behind[0], beside[0]], line.length).tolist() == [
+        False, False, True]
+
+
+def test_no_near_zero_last_segment():
+    empty_cars = pd.DataFrame(columns=["track_id", "side", "s", "length_m", "first_seen_s"])
+    empty_zones = pd.DataFrame(columns=["side", "s", "half_width_m"])
+    segs = sg.build_segments(40.0000001, 20.0, empty_cars, empty_zones)
+    assert segs["segment_m"].tolist() == [20.0, 20.0, 20.0, 20.0]

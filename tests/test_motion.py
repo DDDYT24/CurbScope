@@ -137,3 +137,35 @@ def test_evaluate_refuses_test_with_uncommitted_frozen_file(tmp_path):
                       "rule_b: {max_spread_m: 1.0, max_speed_mps: 1.0}\n")
     r = run_script("evaluate.py", "--split", "test", "--frozen", str(frozen))
     assert r.returncode != 0 and "must be committed" in r.stderr
+
+
+def test_parked_by_track_gives_plain_python_values(features):
+    frozen = {"rule_a": {"max_shift_over_height": 1.0},
+              "rule_b": {"max_spread_m": 0.5, "max_speed_mps": 1.0}}
+    status = motion.parked_by_track(features, frozen)
+    assert status[1] is True and status[2] is False and status[3] is None
+
+
+def test_committed_unchanged_detects_an_edit_after_commit(tmp_path, monkeypatch):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("evaluate", ROOT / "scripts" / "evaluate.py")
+    evaluate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(evaluate)
+
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    monkeypatch.chdir(tmp_path)
+    frozen = Path("frozen.yaml")
+    frozen.write_text("rule_a: {max_shift_over_height: 2}\n")
+    assert not evaluate.committed_unchanged(frozen)          # not tracked yet
+    subprocess.run(git + ["add", "frozen.yaml"], check=True)
+    subprocess.run(git + ["commit", "-qm", "freeze"], check=True)
+    assert evaluate.committed_unchanged(frozen)
+    frozen.write_text("rule_a: {max_shift_over_height: 3}\n")
+    assert not evaluate.committed_unchanged(frozen)          # edited after the commit
+
+
+def test_tune_without_inputs_explains_instead_of_a_traceback(tmp_path):
+    r = run_script("tune.py", "--split", "dev", "--results-dir", str(tmp_path))
+    assert r.returncode != 0 and "make motion" in r.stderr and "Traceback" not in r.stderr

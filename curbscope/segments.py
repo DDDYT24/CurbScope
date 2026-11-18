@@ -74,6 +74,14 @@ def place(line: LineString, xy) -> tuple[float, float, np.ndarray]:
     return float(s), float(np.sign(cross) * np.linalg.norm(d)), tangent
 
 
+def beside_path(s: np.ndarray, path_length: float) -> np.ndarray:
+    """True where a placement falls beside the path. Beyond either end, project() clamps s to
+    the end point and the "offset" is the distance to that point, not to the curb beside us (a
+    car still ahead when the drive stops)."""
+    s = np.asarray(s, dtype=float)
+    return (s > 0.01) & (s < path_length - 0.01)
+
+
 def vehicle_length(points_xy: np.ndarray, tangent: np.ndarray, cfg: dict) -> tuple[float, str]:
     """Length along the curb from LiDAR points gathered over the track's frames: the 5th to
     95th percentile span along the path. Falls back to the configured default when there are
@@ -97,7 +105,8 @@ def build_segments(path_length: float, segment_m: float, vehicles: pd.DataFrame,
     vehicles: parked vehicles with s, side ('left'/'right'), length_m, track_id, first_seen_s.
     buffers: no-parking zones with s, side, half_width_m (zone is s +/- half_width_m).
     """
-    edges = np.arange(0.0, path_length, segment_m)
+    # A path a hair longer than a multiple of segment_m must not grow a near-zero last segment.
+    edges = [e for e in np.arange(0.0, path_length, segment_m) if path_length - e > 1e-6]
     rows = []
     for side in ("left", "right"):
         cars = vehicles[vehicles["side"] == side]

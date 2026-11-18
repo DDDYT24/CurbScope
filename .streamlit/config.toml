@@ -1,0 +1,11 @@
+# Dashboard and labelling page theme: a light ground, ink text, one blue for data and actions.
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#fcfcfb"
+secondaryBackgroundColor = "#f1f0ec"
+textColor = "#1f1f1e"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false

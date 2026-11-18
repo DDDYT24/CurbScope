@@ -24,7 +24,7 @@ One row per photo, written before looking at any OCR output:
 | text_lines | the sign's text, line by line, separated by `\|`; unreadable characters `[?]` | `2 HR PARKING \| 9 AM - 6 PM \| MON - SAT` |
 | type | `time_limit`, `no_parking`, `no_stopping`, `permit`, `loading_zone`, `pay_parking`, `tow_away` or `unknown` | `time_limit` |
 | max_minutes | number, or empty | `120` |
-| days | `MON-FRI` for three or more days in a row, `SAT,SUN` for a list or two days, `SUN` for one; empty for every day or not stated | `MON-SAT` |
+| days | `MON-FRI` for three or more days in a row within MON to SUN, `SAT,SUN` for two days or a list (a range that wraps past Sunday, FRI-MON, is written `MON,FRI,SAT,SUN`), `SUN` for one; empty for every day or not stated | `MON-SAT` |
 | start, end | 24-hour `HH:MM`, from the first time range; empty if none | `09:00`, `18:00` |
 | exceptions | `HOLIDAYS`, `PERMIT`, or `HOLIDAYS;PERMIT`; empty if none | `HOLIDAYS` |
 | permit_zone | zone code, or empty | `12B` |
@@ -67,14 +67,15 @@ CER and parsed rule per photo).
 - **OCR confusions** are fixed only inside runs that contain a digit: O/o to 0, I/l to 1,
   B to 8, S to 5. `I5 MIN` becomes `15 MIN`; `SAT` or `BUS` never change. Permit zones are read
   from the unfixed text, because codes like `12B` are real.
-- **Time limits:** `2 HR`, `2 HOUR`, `15 MIN`, `1/2 HR`.
+- **Time limits:** `2 HR`, `2 HOUR`, `15 MIN`, `1/2 HR`, `1 1/2 HR`.
 - **Time ranges:** `9AM-6PM`, `8:00 AM TO 5:30 PM`, `NOON-6PM`. A side without AM/PM borrows the
   other side's unless that puts the start after the end (`9-6PM` is 09:00-18:00); with no AM/PM
   at all, a smaller end hour is read as afternoon (`9-5` is 09:00-17:00). Only the first range
   is kept.
 - **Days:** ranges (`MON-FRI`, `MONDAY TO FRIDAY`), lists (`SAT & SUN`), `WEEKDAYS`,
   `WEEKENDS`. Days named after `EXCEPT` are removed (`EXCEPT SUNDAYS & HOLIDAYS` gives MON-SAT
-  with exception HOLIDAYS).
+  with exception HOLIDAYS). The exception clause ends where the hours or a day range begin, so
+  `NO PARKING EXCEPT BY PERMIT 8AM-5PM MON-FRI` keeps MON-FRI as the rule's days.
 - **Types:** NO STOPPING, NO PARKING, LOADING ZONE, PERMIT ... ONLY / RESIDENTIAL PARKING,
   PAY PARKING, a time limit, TOW AWAY.
 - Arrows are not read; they come from the transcription.
