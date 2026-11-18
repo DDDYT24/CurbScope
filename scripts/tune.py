@@ -31,7 +31,11 @@ def main() -> None:
         sys.exit("tune.py never looks at the test drive; thresholds are chosen on dev only.")
 
     cfg = load_config(args.config)
-    features, labels = motion.load_split(cfg["drives"]["dev"], args.results_dir, args.labels_dir)
+    try:
+        features, labels = motion.load_split(cfg["drives"]["dev"], args.results_dir,
+                                             args.labels_dir)
+    except FileNotFoundError as err:
+        sys.exit(str(err))
     # Same tracks for every threshold and both rules: those both rules can decide.
     common = features.dropna(subset=["box_shift_over_height", "spread_m"]).reset_index(drop=True)
     grid = cfg["motion"]["tune_grid"]

@@ -57,6 +57,12 @@ def main() -> None:
     if heic:
         sys.exit(f"HEIC photos cannot be read here; export them as JPEG first: {heic}")
 
+    stems = [p.stem for p in photos]
+    clash = sorted({s for s in stems if stems.count(s) > 1})
+    if clash:
+        sys.exit(f"several photos share a name and would overwrite each other: {clash}; "
+                 "rename them first")
+
     dst_dir.mkdir(parents=True, exist_ok=True)
     out = []
     for src in photos:

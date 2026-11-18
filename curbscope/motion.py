@@ -133,6 +133,15 @@ def load_frozen(path) -> tuple[dict, str]:
     return frozen, hashlib.sha256(data).hexdigest()
 
 
+def parked_by_track(features: pd.DataFrame, frozen: dict) -> dict[int, bool | None]:
+    """Rule B's decision per track as plain Python values: True, False, or None (undecided).
+    A pandas boolean Series yields numpy booleans, which `is True` never matches."""
+    decided = rule_b(features, frozen["rule_b"]["max_spread_m"],
+                     frozen["rule_b"]["max_speed_mps"])
+    return {int(t): (None if pd.isna(v) else bool(v))
+            for t, v in zip(features["track_id"], decided, strict=True)}
+
+
 def predict(features: pd.DataFrame, frozen: dict) -> dict[str, pd.Series]:
     return {
         "rule_a_image": rule_a(features, frozen["rule_a"]["max_shift_over_height"]),

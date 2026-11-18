@@ -3,6 +3,9 @@ data/
 *.pt
 *.onnx
 
+# Temporary files written before an atomic rename
+*.tmp
+
 # Python
 __pycache__/
 *.pyc

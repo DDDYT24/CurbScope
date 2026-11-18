@@ -48,8 +48,9 @@ def normalise(text: str, fix: bool = True) -> str:
 
 
 def _max_minutes(text: str) -> int | None:
-    if re.search(r"\b1/2\s*(?:HR|HOUR)\b", text):
-        return 30
+    m = re.search(r"\b(?:(\d{1,2})\s+)?1/2\s*(?:HR|HOUR)\b", text)
+    if m:
+        return int(m.group(1) or 0) * 60 + 30
     m = re.search(r"\b(\d{1,3})\s*(?:HR|HRS|HOUR|HOURS|H)\b", text)
     if m:
         return int(m.group(1)) * 60
@@ -136,10 +137,23 @@ def _permit_zone(text: str) -> str | None:
     return m.group(1) if m else None
 
 
+def _split_except(text: str) -> tuple[str, str]:
+    """(rule text, exception clause). The clause starts at EXCEPT (not EXCEPTED) and ends where
+    the hours or a day range begin, since signs often put the exception on its own line before
+    them: in "NO PARKING EXCEPT BY PERMIT 8AM-5PM MON-FRI" the days MON-FRI belong to the rule."""
+    parts = re.split(r"\bEXCEPT\b", text, maxsplit=1)
+    if len(parts) == 1:
+        return text, ""
+    before, after = parts
+    end = re.search(rf"{_RANGE.pattern}|{_DAY}\s*(?:-|TO|THROUGH|THRU)\s*{_DAY}", after)
+    if end is None:
+        return before, after
+    return before + " " + after[end.start():], after[:end.start()]
+
+
 def parse(raw_text: str) -> dict:
     text = normalise(raw_text)
-    parts = re.split(r"\bEXCEPT\b", text, maxsplit=1)  # EXCEPTED is not EXCEPT
-    main, except_part = parts[0], (parts[1] if len(parts) > 1 else "")
+    main, except_part = _split_except(text)
 
     sign_type = next((t for t, p in TYPE_PATTERNS if re.search(p, text)), None)
     max_minutes = _max_minutes(text)

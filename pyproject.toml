@@ -25,6 +25,8 @@ dependencies = [
     "pytesseract==0.3.13",
     "transformers==5.22.1",
     "jiwer==4.0.0",
+    "folium==0.20.0",
+    "streamlit-folium==0.27.4",
 ]
 
 [dependency-groups]
@@ -52,7 +54,7 @@ constraint-dependencies = [
     "imageio<2.38.2",
     "markdown-it-py<4.3.0",
     "narwhals<2.29.0",
-    "pyarrow<26.0.1",
+    "pyarrow<20",  # pyarrow 20+ needs numpy 2; numpy is pinned to 1.26 (Streamlit tables)
     "pydantic<2.14.3",
     "pydantic-core<2.50.4",
     "python-multipart<0.0.34",

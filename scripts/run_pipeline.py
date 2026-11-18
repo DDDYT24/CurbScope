@@ -216,23 +216,23 @@ def stage_motion(cfg: dict, kitti_dir: str, drives: list[str], out_dir: Path) ->
         print(f"{drive}: {len(features)} tracks, rule B can decide {decided_b}", flush=True)
 
 
-def track_points_xy(raw, calib: dict, boxes: pd.DataFrame, T_w_cam2: np.ndarray,
-                    cfg_geo: dict, cache: dict) -> np.ndarray:
-    """World x, y of the object's LiDAR points over every frame of one track."""
+def points_by_track(raw, calib: dict, boxes: pd.DataFrame, T_w_cam2: np.ndarray,
+                    cfg_geo: dict) -> dict[int, np.ndarray]:
+    """World x, y of each track's LiDAR object points over all its frames. Frames are visited
+    once each, so only one scan is in memory at a time."""
     K = calib["P_rect_20"][:3, :3]
-    out = []
-    for r in boxes.to_dict("records"):
-        frame = int(r["frame"])
-        if frame not in cache:
-            cache[frame] = geo.frame_points(io_kitti.velo_scan(raw, frame),
-                                            calib["T_cam2_velo"], K, cfg_geo)
-        cam, uv = cache[frame]
-        points = geo.object_points(
-            geo.box_points(cam, uv, (r["x1"], r["y1"], r["x2"], r["y2"]),
-                           cfg_geo["box_keep_fraction"]), cfg_geo)
-        if points is not None:
-            out.append(geo.apply_transform(T_w_cam2[frame], points)[:, :2])
-    return np.vstack(out) if out else np.zeros((0, 2))
+    out: dict[int, list] = {}
+    for frame, group in boxes.groupby("frame"):
+        cam, uv = geo.frame_points(io_kitti.velo_scan(raw, int(frame)), calib["T_cam2_velo"], K,
+                                   cfg_geo)
+        for r in group.to_dict("records"):
+            points = geo.object_points(
+                geo.box_points(cam, uv, (r["x1"], r["y1"], r["x2"], r["y2"]),
+                               cfg_geo["box_keep_fraction"]), cfg_geo)
+            if points is not None:
+                out.setdefault(int(r["track_id"]), []).append(
+                    geo.apply_transform(T_w_cam2[int(frame)], points)[:, :2])
+    return {t: np.vstack(p) for t, p in out.items()}
 
 
 def run_segments(cfg: dict, kitti_dir: str, drive: str, out_dir: Path, frozen: dict) -> dict:
@@ -261,24 +261,28 @@ def run_segments(cfg: dict, kitti_dir: str, drive: str, out_dir: Path, frozen: d
     placed["s"] = [w[0] for w in where]
     placed["offset_m"] = [w[1] for w in where]
     placed["side"] = np.where(placed["offset_m"] > 0, "left", "right")
+    placed["beside_path"] = segments.beside_path(placed["s"], line.length)
     lo, hi = sc["curb_offset_range_m"]
-    placed["at_curb"] = placed["offset_m"].abs().between(lo, hi)
+    placed["at_curb"] = placed["beside_path"] & placed["offset_m"].abs().between(lo, hi)
     placed = placed.rename(columns={"median_x": "x", "median_y": "y"})
     tangents = dict(zip(placed["track_id"], [w[2] for w in where], strict=True))
 
+    all_vehicles = features[features["class"].isin(sc["vehicle_classes"])]
     vehicles = placed[placed["class"].isin(sc["vehicle_classes"])].copy()
-    curb = vehicles["parked"].fillna(False).astype(bool) & vehicles["at_curb"]
+    is_parked = vehicles["parked"].fillna(False).astype(bool)
+    curb = is_parked & vehicles["at_curb"]
     vehicles["length_m"] = np.nan
     vehicles["length_source"] = None
-    cache = {}
+    curb_ids = set(vehicles.loc[curb, "track_id"])
+    xy = points_by_track(raw, calib, tracks[tracks["track_id"].isin(curb_ids)], T_w_cam2,
+                         cfg["geo"])
     for i in vehicles.index[curb]:
         track_id = vehicles.at[i, "track_id"]
-        xy = track_points_xy(raw, calib, tracks[tracks["track_id"] == track_id], T_w_cam2,
-                             cfg["geo"], cache)
         vehicles.at[i, "length_m"], vehicles.at[i, "length_source"] = segments.vehicle_length(
-            xy, tangents[track_id], sc)
+            xy.get(track_id, np.zeros((0, 2))), tangents[track_id], sc)
     curb_cars = vehicles[curb]
 
+    detected_objects = features[features["class"].isin(list(no_parking))]
     objects = placed[placed["class"].isin(list(no_parking)) & placed["at_curb"]].copy()
     objects["half_width_m"] = objects["class"].map(no_parking)
 
@@ -292,14 +296,18 @@ def run_segments(cfg: dict, kitti_dir: str, drive: str, out_dir: Path, frozen: d
     return {
         "path_length_m": round(line.length, 1),
         "segments": int(len(segs)),
-        "vehicle_tracks_with_position": int(len(vehicles)),
+        "vehicle_tracks": int(len(all_vehicles)),
+        "vehicle_tracks_without_position": int(len(all_vehicles) - len(vehicles)),
         "parked_at_curb": int(curb.sum()),
-        "parked_away_from_curb": int((vehicles["parked"].fillna(False).astype(bool)
+        "parked_away_from_curb": int((is_parked & vehicles["beside_path"]
                                       & ~vehicles["at_curb"]).sum()),
-        "undecided": int(vehicles["parked"].isna().sum()),
+        "parked_beyond_path_ends": int((is_parked & ~vehicles["beside_path"]).sum()),
         "length_from_lidar": int((curb_cars["length_source"] == "lidar").sum()),
         "length_default": int((curb_cars["length_source"] == "default").sum()),
-        "no_parking_objects": {k: int(v) for k, v in objects["class"].value_counts().items()},
+        "no_parking_objects_detected": {
+            k: int(v) for k, v in detected_objects["class"].value_counts().items()},
+        "no_parking_objects_at_curb": {
+            k: int(v) for k, v in objects["class"].value_counts().items()},
         "usable_m": round(usable, 1),
         "occupied_usable_m": round(occupied, 1),
         "occupied_no_parking_m": round(float(segs["occupied_no_parking_m"].sum()), 1),

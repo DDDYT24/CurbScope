@@ -13,8 +13,11 @@ Our own path (the OXTS positions) is a polyline. Any point in the world is place
   point; positive means left of the direction of travel;
 - **offset**: the distance from the path.
 
-A parked vehicle (rule B with the frozen thresholds) counts as being at the curb when its offset
-is between 1.5 and 12 m. Its position is the median world position from M3.
+A parked vehicle (rule B with the frozen thresholds) counts as being at the curb when it lies
+beside the path and its offset is between 1.5 and 12 m. Its position is the median world
+position from M3. A vehicle beyond either end of the path (a car still ahead when the drive
+stops) is left out and counted: there, the distance to the path is the distance to its end
+point, not to the curb beside us.
 
 ## Vehicle length along the curb
 
@@ -46,8 +49,10 @@ Lengths along the curb are intervals in s:
 - `results/segments_<drive>.csv`: one row per side and segment.
 - `results/segments_<drive>.geojson`: segment lines drawn 4 m beside our path on their side
   (on a tight bend the inner offset line can split; the longest part is drawn), with all metrics
-  as properties; and one point per vehicle track with a position (`parked` true, false or null).
+  as properties; and one point per vehicle track with a LiDAR position (`parked` true or
+  false; tracks without a position cannot be decided and are not drawn).
   Coordinates are longitude, latitude (GeoJSON order) from the M2 conversion. Open it in QGIS.
-- `results/segments_summary.json`: per drive, parked vehicles at the curb, how many lengths came
-  from LiDAR, no-parking objects, total usable and occupied length, overall occupancy; and the
-  SHA-256 of the frozen thresholds used.
+- `results/segments_summary.json`: per drive, vehicle tracks and how many had no position;
+  parked vehicles at the curb, away from it and beyond the path ends; how many lengths came from
+  LiDAR; no-parking objects detected and placed at the curb; total usable and occupied length;
+  overall occupancy; and the SHA-256 of the frozen thresholds used.

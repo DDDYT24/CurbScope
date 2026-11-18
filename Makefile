@@ -9,7 +9,7 @@ YOLO_ENV = YOLO_OFFLINE=1 YOLO_AUTOINSTALL=False
 # Hugging Face: no usage telemetry when TrOCR is downloaded.
 HF_ENV = HF_HUB_DISABLE_TELEMETRY=1
 
-.PHONY: help setup lint test info weights track geo motion label tune evaluate segments strip-exif ocr
+.PHONY: help setup lint test info weights track geo motion label tune evaluate segments strip-exif ocr report dashboard all
 
 help:
 	@echo "setup               install pinned dependencies with uv"
@@ -26,6 +26,9 @@ help:
 	@echo "segments [DRIVE=<id>]  curb segments and GeoJSON (needs frozen thresholds)"
 	@echo "strip-exif          copy data/signs/ to data/signs_clean/ without EXIF"
 	@echo "ocr                 compare three OCR engines on the sign photos"
+	@echo "report              results/report.md and the results block of README.md"
+	@echo "dashboard           Streamlit dashboard"
+	@echo "all                 every step whose inputs exist, then the report"
 
 setup:
 	$(UV) sync --frozen
@@ -70,3 +73,16 @@ strip-exif: weights
 
 ocr:
 	$(HF_ENV) $(RUN) python scripts/ocr_benchmark.py
+
+report:
+	$(RUN) python -m curbscope.report
+
+dashboard:
+	$(RUN) streamlit run apps/dashboard.py --server.headless true -- --kitti-dir $(KITTI_DIR)
+
+# Steps that need the owner's input run only once that input exists; the report says what is
+# still pending.
+all: track geo motion
+	@if [ -f configs/frozen_thresholds.yaml ]; then 		$(MAKE) evaluate SPLIT=dev && $(MAKE) evaluate SPLIT=test && $(MAKE) segments; 	else echo "skipping evaluate and segments: configs/frozen_thresholds.yaml does not exist yet"; fi
+	@if [ -f labels/signs_groundtruth.csv ]; then $(MAKE) strip-exif ocr; 	else echo "skipping OCR: labels/signs_groundtruth.csv does not exist yet"; fi
+	$(MAKE) report

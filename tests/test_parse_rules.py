@@ -47,6 +47,12 @@ RULES = [
     ("NO PARKING DAILY 9AM-5PM", "no_parking", None, None, "09:00", "17:00", None, None),
     ("NO PARKING MONTHLY STREET CLEANING", "no_parking", None, None, None, None, None, None),
     ("WELCOME TO GARNEAU", "unknown", None, None, None, None, None, None),
+    # the exception on its own line before the hours: the days still belong to the rule
+    ("NO PARKING EXCEPT BY PERMIT | 8AM-5PM | MON-FRI", "no_parking", None, "MON-FRI", "08:00",
+     "17:00", "PERMIT", None),
+    ("2 HR PARKING EXCEPT SUNDAYS 9AM-6PM", "time_limit", 120, "MON-SAT", "09:00", "18:00",
+     None, None),
+    ("1 1/2 HR PARKING", "time_limit", 90, None, None, None, None, None),
 ]
 
 

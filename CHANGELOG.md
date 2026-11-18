@@ -1,5 +1,30 @@
 # Changelog
 
+## M6 Report, dashboard and README
+
+- `curbscope/report.py` (`make report`): `results/report.md` and the README results block, built
+  only from `results/*.json`; missing results are shown as pending with what they need; a test
+  fails when the README block is stale.
+- `apps/dashboard.py` (`make dashboard`): overview map and occupancy per segment, frame viewer,
+  sign OCR comparison, evaluation tables from the report's own functions.
+- `make all`: every step whose inputs exist, then the report.
+- README rewritten: problem, pipeline diagram, generated results, how to run, licences,
+  limitations, next steps. `docs/ARCHITECTURE.md` with the data flow and decision records.
+- pyarrow capped below 20 (pyarrow 20+ needs numpy 2); a test now imports every compiled
+  package against the pinned numpy.
+- Fixes from an independent review of M3 to M6:
+  - the frame viewer now colours parked and moving boxes (`motion.parked_by_track` returns plain
+    Python values; numpy booleans never matched `is True`);
+  - the sign parser ends an EXCEPT clause where the hours or a day range begin, so the days of
+    `NO PARKING EXCEPT BY PERMIT 8AM-5PM MON-FRI` stay MON-FRI; `1 1/2 HR` reads as 90 minutes;
+  - curb segments leave out vehicles beyond either end of our path and count them; no
+    near-zero last segment; LiDAR points are gathered frame by frame instead of cached; the
+    summary counts vehicle tracks without a position and no-parking objects detected versus
+    placed;
+  - the report warns when results come from different frozen thresholds and shows a pending
+    test split; `make tune` explains missing inputs instead of a traceback; strip-exif refuses
+    photos whose names would collide; `*.tmp` is ignored.
+
 ## M5 Parking sign OCR benchmark and rule parser
 
 - `scripts/strip_exif.py` (`make strip-exif`): upright copies of the sign photos with no EXIF,
