@@ -7,7 +7,7 @@ RUN = $(UV) run --frozen
 # Ultralytics: no network (no usage analytics), no automatic pip installs.
 YOLO_ENV = YOLO_OFFLINE=1 YOLO_AUTOINSTALL=False
 
-.PHONY: help setup lint test info weights track geo
+.PHONY: help setup lint test info weights track geo motion label tune evaluate
 
 help:
 	@echo "setup               install pinned dependencies with uv"
@@ -17,6 +17,10 @@ help:
 	@echo "weights             download YOLO weights and check their SHA-256"
 	@echo "track [DRIVE=<id>]  YOLO + ByteTrack on all drives in the config, or one"
 	@echo "geo [DRIVE=<id>]    LiDAR position, lat/lon and error against KITTI labels"
+	@echo "motion              per-track features for the parked/moving rules"
+	@echo "label               open the track labelling page (writes labels/)"
+	@echo "tune                rule accuracy over thresholds, dev drives only"
+	@echo "evaluate SPLIT=dev|test  score both rules with configs/frozen_thresholds.yaml"
 
 setup:
 	$(UV) sync --frozen
@@ -39,3 +43,16 @@ track: weights
 
 geo:
 	$(RUN) python scripts/run_pipeline.py --stage geo --kitti-dir $(KITTI_DIR) $(if $(DRIVE),--drive $(DRIVE))
+
+motion:
+	$(RUN) python scripts/run_pipeline.py --stage motion $(if $(DRIVE),--drive $(DRIVE))
+
+label:
+	$(RUN) streamlit run apps/label_tracks.py --server.headless true -- --kitti-dir $(KITTI_DIR)
+
+tune:
+	$(RUN) python scripts/tune.py --split dev
+
+evaluate:
+	@test -n "$(SPLIT)" || (echo "usage: make evaluate SPLIT=dev  (or SPLIT=test)" && exit 2)
+	$(RUN) python scripts/evaluate.py --split $(SPLIT)

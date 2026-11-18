@@ -37,3 +37,13 @@ geo_eval:
   detection_classes: [car, truck, bus]
   match_max_m: 4.0               # about one car length; fixed before looking at results
   range_bins_m: [0, 10, 20, 40]
+
+# M3: parked or moving. Thresholds are NOT here: the owner picks them on dev drives and
+# writes configs/frozen_thresholds.yaml (see scripts/tune.py).
+motion:
+  min_frames_rule_a: 3           # shorter tracks: rule A cannot decide
+  min_known_rule_b: 3            # fewer world positions: rule B cannot decide
+  tune_grid:                     # thresholds scripts/tune.py tries on dev drives
+    rule_a_max_shift_over_height: [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 16.0, 24.0]
+    rule_b_max_spread_m: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]
+    rule_b_max_speed_mps: [0.5, 1.0, 2.0, 4.0]
