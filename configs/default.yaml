@@ -47,3 +47,14 @@ motion:
     rule_a_max_shift_over_height: [0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 16.0, 24.0]
     rule_b_max_spread_m: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0]
     rule_b_max_speed_mps: [0.5, 1.0, 2.0, 4.0]
+
+# M4: curb segments. Parked = rule B with the owner's frozen thresholds.
+segments:
+  segment_m: 20.0
+  rules: configs/rules_edmonton.yaml
+  vehicle_classes: [car, truck, bus, motorcycle]
+  curb_offset_range_m: [1.5, 12.0]    # parked vehicles this far left/right of our path count
+  default_vehicle_length_m: 4.5       # used (and flagged) when LiDAR cannot measure the length
+  vehicle_length_range_m: [2.0, 8.0]  # LiDAR lengths outside this are treated as failures
+  min_length_points: 20               # LiDAR points needed, over all frames, to measure length
+  display_offset_m: 4.0               # GeoJSON segment lines are drawn this far beside our path

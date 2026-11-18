@@ -115,3 +115,10 @@ def test_latlon_matches_pykitti_poses(fake_kitti):
     fixes = np.array([[o.packet.lat, o.packet.lon] for o in raw.oxts])
     xy = geo.latlon_to_world(fixes, fixes[0, 0], fixes[0, 1])
     np.testing.assert_allclose(xy, io_kitti.poses(raw)[:, :2, 3], atol=1e-6)
+
+
+def test_latlon_single_point_matches_batch():
+    one = geo.world_to_latlon(np.array([[10.0, 3.0]]), 49.0, 8.4)
+    many = geo.world_to_latlon(np.array([[10.0, 3.0], [0.0, 0.0]]), 49.0, 8.4)
+    np.testing.assert_allclose(one[0], many[0])
+    np.testing.assert_allclose(geo.latlon_to_world(one, 49.0, 8.4), [[10.0, 3.0]], atol=1e-6)

@@ -1,5 +1,17 @@
 # Changelog
 
+## M4 Curb segments and GeoJSON
+
+- `curbscope/segments.py`: places objects on our path (distance along it, side from the cross
+  product), measures vehicle length along the curb from LiDAR points with a flagged 4.5 m
+  fallback, cuts each side into 20 m segments with usable length, occupied length (interval
+  union), occupancy, occupancy inside no-parking zones, vehicle count and first-seen times.
+- `configs/rules_edmonton.yaml`: 5 m around fire hydrants and stop signs, with sources; rules
+  that cannot be applied are listed.
+- `make segments` writes `results/segments_<drive>.csv`, `.geojson` (lon/lat) and
+  `results/segments_summary.json`; it needs the frozen parked/moving thresholds.
+- `geo.object_points` split out of `geo.locate` so M4 reuses the same LiDAR object points.
+
 ## M3 Parked or moving
 
 - `curbscope/motion.py`: per-track features for an image rule (box shift over box height) and a

@@ -7,7 +7,7 @@ RUN = $(UV) run --frozen
 # Ultralytics: no network (no usage analytics), no automatic pip installs.
 YOLO_ENV = YOLO_OFFLINE=1 YOLO_AUTOINSTALL=False
 
-.PHONY: help setup lint test info weights track geo motion label tune evaluate
+.PHONY: help setup lint test info weights track geo motion label tune evaluate segments
 
 help:
 	@echo "setup               install pinned dependencies with uv"
@@ -21,6 +21,7 @@ help:
 	@echo "label               open the track labelling page (writes labels/)"
 	@echo "tune                rule accuracy over thresholds, dev drives only"
 	@echo "evaluate SPLIT=dev|test  score both rules with configs/frozen_thresholds.yaml"
+	@echo "segments [DRIVE=<id>]  curb segments and GeoJSON (needs frozen thresholds)"
 
 setup:
 	$(UV) sync --frozen
@@ -56,3 +57,6 @@ tune:
 evaluate:
 	@test -n "$(SPLIT)" || (echo "usage: make evaluate SPLIT=dev  (or SPLIT=test)" && exit 2)
 	$(RUN) python scripts/evaluate.py --split $(SPLIT)
+
+segments:
+	$(RUN) python scripts/run_pipeline.py --stage segments --kitti-dir $(KITTI_DIR) $(if $(DRIVE),--drive $(DRIVE))

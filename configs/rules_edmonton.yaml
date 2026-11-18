@@ -1,0 +1,23 @@
+# Edmonton curb rules used by M4. KITTI was recorded in Germany, so these are applied only as a
+# demonstration configuration, not as a legal judgement about German streets.
+#
+# Sources (checked 2026-11-17):
+# - City of Edmonton, school parking enforcement page: lists parking within 5 m of a stop or
+#   yield sign and within 5 m of a fire hydrant as infractions.
+#   https://www.edmonton.ca/city_government/bylaws/school-parking-enforcement-programs
+# - City of Edmonton Traffic Bylaw 5590 (the bylaw behind those rules).
+#   https://www.edmonton.ca/sites/default/files/public-files/C5590.pdf
+# - Alberta guidance quoted by AMA School Safety Patrol: 5 m from hydrants (measured from the
+#   point on the curb nearest the hydrant) and from stop or yield signs; 1.5 m from a driveway.
+#   https://schoolpatrol.ama.ab.ca/wp-content/uploads/2024/09/Cone-Use-for-Sightlines-1.pdf
+
+# Detected object class (COCO name) -> no-parking distance in metres on each side of it,
+# measured along the curb.
+no_parking_m:
+  fire hydrant: 5.0
+  stop sign: 5.0
+
+# Rules that exist but cannot be applied, because the detector has no class for them:
+not_applied:
+  - intersections and crosswalks (5 m)
+  - driveways and garage entrances (1.5 m)

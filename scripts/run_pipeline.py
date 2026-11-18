@@ -1,20 +1,23 @@
 """Run the pipeline stages on KITTI drives.
 
 Stages: track (M1, YOLO + ByteTrack), geo (M2, LiDAR position, lat/lon, error vs labels),
-motion (M3, per-track features for the parked/moving rules).
+motion (M3, per-track features for the parked/moving rules), segments (M4, curb segments and
+GeoJSON; needs configs/frozen_thresholds.yaml).
 Usage: python scripts/run_pipeline.py --stage track --kitti-dir ~/data/kitti [--drive <id>]
 Without --drive, every dev and test drive in the config is processed.
 """
 
 import argparse
 import json
+import sys
 import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
-from curbscope import detect_track, geo, geo_eval, io_kitti, motion
+from curbscope import detect_track, geo, geo_eval, io_kitti, motion, segments
 from curbscope.config import DEFAULT, all_drives, load_config
 
 
@@ -213,9 +216,120 @@ def stage_motion(cfg: dict, kitti_dir: str, drives: list[str], out_dir: Path) ->
         print(f"{drive}: {len(features)} tracks, rule B can decide {decided_b}", flush=True)
 
 
+def track_points_xy(raw, calib: dict, boxes: pd.DataFrame, T_w_cam2: np.ndarray,
+                    cfg_geo: dict, cache: dict) -> np.ndarray:
+    """World x, y of the object's LiDAR points over every frame of one track."""
+    K = calib["P_rect_20"][:3, :3]
+    out = []
+    for r in boxes.to_dict("records"):
+        frame = int(r["frame"])
+        if frame not in cache:
+            cache[frame] = geo.frame_points(io_kitti.velo_scan(raw, frame),
+                                            calib["T_cam2_velo"], K, cfg_geo)
+        cam, uv = cache[frame]
+        points = geo.object_points(
+            geo.box_points(cam, uv, (r["x1"], r["y1"], r["x2"], r["y2"]),
+                           cfg_geo["box_keep_fraction"]), cfg_geo)
+        if points is not None:
+            out.append(geo.apply_transform(T_w_cam2[frame], points)[:, :2])
+    return np.vstack(out) if out else np.zeros((0, 2))
+
+
+def run_segments(cfg: dict, kitti_dir: str, drive: str, out_dir: Path, frozen: dict) -> dict:
+    sc = cfg["segments"]
+    with open(sc["rules"], encoding="utf-8") as f:
+        no_parking = yaml.safe_load(f)["no_parking_m"]
+    paths = {k: out_dir / f"{k}_{drive}.csv" for k in ("tracks", "motion_features")}
+    missing = [str(p) for p in paths.values() if not p.exists()]
+    if missing:
+        raise FileNotFoundError(f"{missing} not found; run `make track geo motion` first")
+    tracks = pd.read_csv(paths["tracks"])
+    features = pd.read_csv(paths["motion_features"])
+
+    raw = io_kitti.open_drive(kitti_dir, drive)
+    calib = io_kitti.calibration(raw)
+    T_w_imu = io_kitti.poses(raw)
+    T_w_cam2 = np.stack([geo.world_from_cam2(T, calib["T_cam2_imu"]) for T in T_w_imu])
+    first = raw.oxts[0].packet
+    line = segments.path_line(T_w_imu[:, :2, 3])
+
+    features["parked"] = motion.rule_b(features, frozen["rule_b"]["max_spread_m"],
+                                       frozen["rule_b"]["max_speed_mps"])
+    placed = features.dropna(subset=["median_x"]).copy()
+    where = [segments.place(line, (x, y))
+             for x, y in zip(placed["median_x"], placed["median_y"], strict=True)]
+    placed["s"] = [w[0] for w in where]
+    placed["offset_m"] = [w[1] for w in where]
+    placed["side"] = np.where(placed["offset_m"] > 0, "left", "right")
+    lo, hi = sc["curb_offset_range_m"]
+    placed["at_curb"] = placed["offset_m"].abs().between(lo, hi)
+    placed = placed.rename(columns={"median_x": "x", "median_y": "y"})
+    tangents = dict(zip(placed["track_id"], [w[2] for w in where], strict=True))
+
+    vehicles = placed[placed["class"].isin(sc["vehicle_classes"])].copy()
+    curb = vehicles["parked"].fillna(False).astype(bool) & vehicles["at_curb"]
+    vehicles["length_m"] = np.nan
+    vehicles["length_source"] = None
+    cache = {}
+    for i in vehicles.index[curb]:
+        track_id = vehicles.at[i, "track_id"]
+        xy = track_points_xy(raw, calib, tracks[tracks["track_id"] == track_id], T_w_cam2,
+                             cfg["geo"], cache)
+        vehicles.at[i, "length_m"], vehicles.at[i, "length_source"] = segments.vehicle_length(
+            xy, tangents[track_id], sc)
+    curb_cars = vehicles[curb]
+
+    objects = placed[placed["class"].isin(list(no_parking)) & placed["at_curb"]].copy()
+    objects["half_width_m"] = objects["class"].map(no_parking)
+
+    segs = segments.build_segments(line.length, sc["segment_m"], curb_cars, objects)
+    segs.to_csv(out_dir / f"segments_{drive}.csv", index=False)
+    segments.write_geojson(
+        segments.geojson(line, segs, vehicles, (first.lat, first.lon), sc["display_offset_m"]),
+        out_dir / f"segments_{drive}.geojson")
+    usable = float(segs["usable_m"].sum())
+    occupied = float(segs["occupied_usable_m"].sum())
+    return {
+        "path_length_m": round(line.length, 1),
+        "segments": int(len(segs)),
+        "vehicle_tracks_with_position": int(len(vehicles)),
+        "parked_at_curb": int(curb.sum()),
+        "parked_away_from_curb": int((vehicles["parked"].fillna(False).astype(bool)
+                                      & ~vehicles["at_curb"]).sum()),
+        "undecided": int(vehicles["parked"].isna().sum()),
+        "length_from_lidar": int((curb_cars["length_source"] == "lidar").sum()),
+        "length_default": int((curb_cars["length_source"] == "default").sum()),
+        "no_parking_objects": {k: int(v) for k, v in objects["class"].value_counts().items()},
+        "usable_m": round(usable, 1),
+        "occupied_usable_m": round(occupied, 1),
+        "occupied_no_parking_m": round(float(segs["occupied_no_parking_m"].sum()), 1),
+        "overall_occupancy": round(occupied / usable, 4) if usable else None,
+    }
+
+
+def stage_segments(cfg: dict, kitti_dir: str, drives: list[str], out_dir: Path,
+                   frozen_path: str) -> None:
+    try:
+        frozen, sha = motion.load_frozen(frozen_path)
+    except (FileNotFoundError, ValueError) as err:
+        sys.exit(f"Segments need the parked/moving thresholds. {err}")
+    summary_path = out_dir / "segments_summary.json"
+    summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
+    drives_out = summary.get("drives", {}) if summary.get("frozen_sha256") == sha else {}
+    for drive in drives:
+        print(f"segments {drive} ...", flush=True)
+        result = run_segments(cfg, kitti_dir, drive, out_dir, frozen)
+        drives_out[drive] = result
+        print(f"  {result['parked_at_curb']} parked at the curb, overall occupancy "
+              f"{result['overall_occupancy']}", flush=True)
+    out = {"frozen_sha256": sha, "rule": "rule_b_world", "drives": dict(sorted(drives_out.items()))}
+    summary_path.write_text(json.dumps(out, indent=2) + "\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=["track", "geo", "motion"], required=True)
+    parser.add_argument("--stage", choices=["track", "geo", "motion", "segments"], required=True)
+    parser.add_argument("--frozen", default="configs/frozen_thresholds.yaml")
     parser.add_argument("--config", default=str(DEFAULT))
     parser.add_argument("--kitti-dir")
     parser.add_argument("--drive", help="one drive id; default: all drives in the config")
@@ -227,6 +341,9 @@ def main() -> None:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     drives = [args.drive] if args.drive else all_drives(cfg)
+    if args.stage == "segments":
+        stage_segments(cfg, kitti_dir, drives, out_dir, args.frozen)
+        return
     stages = {"track": stage_track, "geo": stage_geo, "motion": stage_motion}
     stages[args.stage](cfg, kitti_dir, drives, out_dir)
 
